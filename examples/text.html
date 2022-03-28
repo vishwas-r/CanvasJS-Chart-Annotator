@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>CanvasJS Chart Annotator</title>
+<script src="http://localhost:81/CanvasJS/canvasjs.js"></script>
+<script src="../dist/canvasjs-chart-annotator.min.js"></script>
+<script>
+window.onload = function () {
+
+var chart = new CanvasJS.Chart("chartContainer", {	
+	title:{
+		text: "Basic Column Chart"
+	},
+	data: [{
+		type: "column",
+		dataPoints: [
+			{ label: "apple",  y: 10  },
+			{ label: "orange", y: 15  },
+			{ label: "banana", y: 25  },
+			{ label: "mango",  y: 30  },
+			{ label: "grape",  y: 28  }
+		]
+	}],
+	annotations: {
+		text: {
+			fontColor: "white",
+			fontSize: 16,
+			margin: 10,
+			fontStyle: "normal", //Change it to "bold", "italic"
+			fontFamily: "calibri",
+			backgroundColor: "black",
+			borderThickness: 1,
+			borderColor: "red"
+		}
+	}
+});
+chart.render();
+chart.addAnnotations();
+}
+</script>
+</head>
+<body>
+<div id="chartContainer" style="height: 400px; width: 80%; margin: auto"></div>
+</body>
+</html>
