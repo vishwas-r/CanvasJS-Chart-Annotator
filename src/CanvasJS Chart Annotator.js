@@ -93,6 +93,9 @@
 			};
 
 			function renderCustomText(ctx, txt, x, y) {
+				if(!txt)
+					return;
+				
 				ctx.font = getFontString(_this.annotations.text);
 				ctx.textBaseline = "top";
 
