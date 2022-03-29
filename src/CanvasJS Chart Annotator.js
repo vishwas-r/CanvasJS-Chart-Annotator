@@ -19,56 +19,58 @@
 		}
 
 		CanvasJS.Chart.prototype.addAnnotations = function () {
-			this.annotations = {
-				tools: {},
-				text: {}
-			};
+			if(this.options && this.options.annotations && this.options.annotations.enabled) {
+			
+				this.annotations = {
+					tools: {},
+					text: {}
+				};
 
-			this._updateUserCustomOptions();
+				this._updateUserCustomOptions();
 
-			var overlaidCanvas = this.overlaidCanvas, _this = this;
-			this.userCanvas = document.createElement('canvas');
-			this.userCanvas.setAttribute("class", "canvasjs-chart-user-canvas");
+				var overlaidCanvas = this.overlaidCanvas, _this = this;
+				this.userCanvas = document.createElement('canvas');
+				this.userCanvas.setAttribute("class", "canvasjs-chart-user-canvas");
 
-			this.userCanvas.width = this.width;
-			this.userCanvas.height = this.height;
+				this.userCanvas.width = this.width;
+				this.userCanvas.height = this.height;
 
-			this.userCanvas.style.position = "absolute";
-			this.userCanvas.style.userSelect = "none";
-			this._canvasJSContainer.insertBefore(this.userCanvas, this.overlaidCanvas);
+				this.userCanvas.style.position = "absolute";
+				this.userCanvas.style.userSelect = "none";
+				this._canvasJSContainer.insertBefore(this.userCanvas, this.overlaidCanvas);
 
-			this.userCanvasCtx = this.userCanvas.getContext('2d');
+				this.userCanvasCtx = this.userCanvas.getContext('2d');
 
-			if (!this.drawingTools)
-				this.drawingTools = this.createDrawingToolbar();
+				if (!this.drawingTools)
+					this.drawingTools = this.createDrawingToolbar();
 
-			overlaidCanvas.addEventListener('mousedown', function (e) {
-				var xy = getMouseCoordinates(e), tool;
+				overlaidCanvas.addEventListener('mousedown', function (e) {
+					var xy = getMouseCoordinates(e), tool;
 
-				for (var j = 0; j < _this.drawingTools.length; j++) {
-					tool = _this.drawingTools[j];
-					switch (tool.name) {
-						case "text":
-							if (tool.button.value === "on") {
-								var value = prompt("Enter the Text");
-								renderCustomText(_this.userCanvasCtx, value, xy.x, xy.y);
-							}
-							break;
+					for (var j = 0; j < _this.drawingTools.length; j++) {
+						tool = _this.drawingTools[j];
+						switch (tool.name) {
+							case "text":
+								if (tool.button.value === "on") {
+									var value = prompt("Enter the Text");
+									renderCustomText(_this.userCanvasCtx, value, xy.x, xy.y);
+								}
+								break;
+						}
+
 					}
 
-				}
+				}, false);
 
-			}, false);
+				overlaidCanvas.addEventListener('mousemove', function (e) {
 
-			overlaidCanvas.addEventListener('mousemove', function (e) {
+				}, false);
 
-			}, false);
+				overlaidCanvas.addEventListener('mouseup', function (e) {
 
-			overlaidCanvas.addEventListener('mouseup', function (e) {
+				}, false);
 
-			}, false);
-
-
+			}
 			function getMouseCoordinates(ev) {
 				var x = 0;
 				var y = 0;
@@ -216,6 +218,13 @@
 			}
 
 			return tools;
+		}
+	
+		var chartRender = CanvasJS.Chart.prototype.render;
+		CanvasJS.Chart.prototype.render = function (options) {
+			var result = chartRender.apply(this, arguments);				
+			this.addAnnotations();
+			return result;
 		}
 	}
 })();

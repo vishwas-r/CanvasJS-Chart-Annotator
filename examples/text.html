@@ -2,7 +2,7 @@
 <html>
 <head>
 <title>CanvasJS Chart Annotator</title>
-<script src="http://localhost:81/CanvasJS/canvasjs.js"></script>
+<script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
 <script src="../dist/canvasjs-chart-annotator.min.js"></script>
 <script>
 window.onload = function () {
@@ -22,6 +22,7 @@ var chart = new CanvasJS.Chart("chartContainer", {
 		]
 	}],
 	annotations: {
+		enabled: true, //Change it to false
 		text: {
 			fontColor: "white",
 			fontSize: 16,
@@ -35,7 +36,6 @@ var chart = new CanvasJS.Chart("chartContainer", {
 	}
 });
 chart.render();
-chart.addAnnotations();
 }
 </script>
 </head>
