@@ -32,32 +32,36 @@ var chart = new CanvasJS.Chart("chartContainer", {
 			borderThickness: 1,
 			borderColor: "red"
 		}
+	},
+	annotations: {
+		enabled: true
 	}
 });
 chart.render();
-chart.addAnnotations();
 }
 </script>
 </head>
 <body>
 	<h1 id="chart-annotator">CanvasJS Chart Annotator</h1>
-	<p>This plugin allows you to annotate <a href="https://canvasjs.com/" target="_blank">CanvasJS</a> charts. Check out <a href="https://github.com/vishwas-r/CanvasJS-Chart-Annotator">Github Repository</a> for more info / examples.</p>
+	<p>This plugin allows you to annotate <a href="https://canvasjs.com/" target="_blank">CanvasJS</a> charts. Check out <a href="https://github.com/vishwas-r/CanvasJS-Chart-Annotator" target="_blank">Github Repository</a> for more info / examples.</p>
 	<h4 id="howtouse">How to Use?</h4>
 	<ul>
+		<li>Enable Annotations in chart-options</li>
 		<li>Render the chart</li>
-		<li>Call addAnnotations method</li>
 	</ul>
 	<pre><code>var chart = new CanvasJS.Chart("chartContainer", {
     .
     .
     .
     //Chart Options
+	annotations: {
+		enabled: true
+	}
     .
     .
     .
 });
 chart.render()
-chart.addAnnotations();
 <div id="chartContainer" style="height: 400px; width: 80%; margin: auto"></div>
 </body>
 </html>
