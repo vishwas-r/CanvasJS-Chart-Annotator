@@ -163,7 +163,7 @@
 			};
 
 
-			this._drawingToolbar = createElement("div", "canvasjs-chart-drawing-toolbar", { "position": "absolute", "left": "2px", "top": "10px", "width": "40px", "backgroundColor": this.toolbar.itemBackgroundColor, "border": "1px solid " + this.toolbar.buttonBorderColor, "zIndex": 9999 });
+			this._drawingToolbar = createElement("div", "chart-drawing-toolbar", { "position": "absolute", "left": "2px", "top": "10px", "width": "40px", "backgroundColor": this.toolbar.itemBackgroundColor, "border": "1px solid " + this.toolbar.buttonBorderColor, "zIndex": 9999 });
 			this._canvasJSContainer.appendChild(this._drawingToolbar);
 			var menu = createElement("button", "menu", { "border": "none", "background-color": this.toolbar.itemBackgroundColor, borderWidth: this.toolbar.buttonBorderThickness, "cursor": "pointer", "outline": "none", "userSelect": "none", "MozUserSeelct": "none", "WebkitUserSelect": "none", "msUserSelect": "none" });
 			menu.innerHTML = "<img src='" + base64Images["menu"] + "' style='width: 60%; padding: 5px'/>";
@@ -189,7 +189,7 @@
 			drawingTool = createElement("div", "chart-drawing-toolbar-tools", { "padding": 0, "margin": 0, "textAlign": "center", "display": "none" });
 
 			for (var i = 0; i < Object.keys(this.annotations.tools).length; i++) {
-				var button = createElement("button", "chart-drawing-toolbar-buttons", { "border": "none", "textAlign": "center", "backgroundColor": this.toolbar.itemBackgroundColor, "padding": 0, "margin": 0, "userSelect": "none", "MozUserSeelct": "none", "WebkitUserSelect": "none", "msUserSelect": "none", "outline": "none" });
+				var button = createElement("button", "chart-drawing-toolbar-button", { "display": "block", "marginLeft": "3px", "border": "none", "textAlign": "center", "backgroundColor": this.toolbar.itemBackgroundColor, "padding": 0, "margin": "0px 0px 0px 3px", "userSelect": "none", "MozUserSeelct": "none", "WebkitUserSelect": "none", "msUserSelect": "none", "outline": "none" });
 				button.name = Object.keys(this.annotations.tools)[i];
 				button.value = "off";
 				tools.push({ button: button, name: Object.keys(base64Images)[i] });
