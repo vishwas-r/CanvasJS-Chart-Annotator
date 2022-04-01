@@ -1,0 +1,61 @@
+<html>
+<head>
+<title>CanvasJS Chart Annotator</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+<script src="../dist/canvasjs-chart-annotator.min.js"></script>
+<script>
+window.onload = function() {
+var dataPoints = [];
+
+var chart = new CanvasJS.Chart("chartContainer", {
+	animationEnabled: true,
+	theme: "light2",
+	title: {
+		text: "BTC / USD"
+	},
+	axisY: {
+		title: "Closing Price (in USD)",
+      	labelFormatter: function(e) {
+          var suffixes = ["", "K", "M", "B"];
+
+          var order = Math.max(Math.floor(Math.log(e.value) / Math.log(1000)), 0);
+          if(order > suffixes.length - 1)
+            order = suffixes.length - 1;
+
+          var suffix = suffixes[order];
+          return (e.value / Math.pow(1000, order)) + suffix;
+        }
+	},
+	data: [{
+		type: "line",
+      	yValueFormatString: "$#,###.##",
+		dataPoints: dataPoints
+	}],
+	annotations: {
+		enabled: true,
+		pencil: {
+			color: "red",
+			lineThickness: 2
+		}
+	}
+});
+
+function addData(data) {
+	for (var i = 0; i < data.length; i++) {
+		dataPoints.push({
+			x: new Date(data[i].date),
+			y: data[i].close
+		});
+	}
+	chart.render();
+}
+
+$.getJSON("https://api.npoint.io/1ef5148a83bc8a42500d", addData);
+}
+</script>
+</head>
+<body>
+<div id="chartContainer" style="height: 400px; width: 80%; margin: auto"></div>
+</body>
+</html>

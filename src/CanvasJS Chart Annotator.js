@@ -3,8 +3,9 @@
 
 	if (CanvasJS) {
 		CanvasJS.Chart.prototype._updateUserCustomOptions = function () {
-			this.annotations.tools = this.options && this.options.annotations && this.options.annotations.tools ? this.options.annotations.tools : { text: true };
+			this.annotations.tools = this.options && this.options.annotations && this.options.annotations.tools ? this.options.annotations.tools : { text: true, pencil: true };
 			this.annotations.text = this.options && this.options.annotations && this.options.annotations.text ? this.options.annotations.text : {};
+			this.annotations.pencil = this.options && this.options.annotations && this.options.annotations.pencil ? this.options.annotations.pencil : {};
 			this.annotations.tools.reset = true;
 
 			this.annotations.text.fontSize = this.annotations.text.fontSize ? this.annotations.text.fontSize : 12;
@@ -16,6 +17,9 @@
 			this.annotations.text.borderColor = this.annotations.text.borderColor ? this.annotations.text.borderColor : "black";
 			this.annotations.text.backgroundColor = this.annotations.text.backgroundColor ? this.annotations.text.backgroundColor : "white";
 			this.annotations.text.margin = this.annotations.text.margin ? this.annotations.text.margin : 5;
+			
+			this.annotations.pencil.color = this.annotations.pencil.color ? this.annotations.pencil.color : "#000";
+			this.annotations.pencil.lineThickness = this.annotations.pencil.lineThickness ? this.annotations.pencil.lineThickness : 1;
 		}
 
 		CanvasJS.Chart.prototype.addAnnotations = function () {
@@ -23,7 +27,8 @@
 			
 				this.annotations = {
 					tools: {},
-					text: {}
+					text: {},
+					pencil: {}
 				};
 
 				this._updateUserCustomOptions();
@@ -43,7 +48,8 @@
 
 				if (!this.drawingTools)
 					this.drawingTools = this.createDrawingToolbar();
-
+				
+				this.annotations._line = {};
 				overlaidCanvas.addEventListener('mousedown', function (e) {
 					var xy = getMouseCoordinates(e), tool;
 
@@ -56,6 +62,12 @@
 									renderCustomText(_this.userCanvasCtx, value, xy.x, xy.y);
 								}
 								break;
+							case "pencil":
+								if(tool.button.value === "on") {
+									_this.annotations._drawingLines = true;
+									_this.annotations._line.point = xy;
+								}
+								break;
 						}
 
 					}
@@ -63,11 +75,25 @@
 				}, false);
 
 				overlaidCanvas.addEventListener('mousemove', function (e) {
-
+					
+					if(_this.annotations._drawingLines) {
+						_this.userCanvasCtx.beginPath(); 
+						
+						_this.userCanvasCtx.lineWidth = _this.annotations.pencil.lineThickness;
+						_this.userCanvasCtx.lineCap = 'round';
+						_this.userCanvasCtx.strokeStyle = _this.annotations.pencil.color;
+						
+						_this.userCanvasCtx.moveTo(_this.annotations._line.point.x, _this.annotations._line.point.y);
+						_this.annotations._line.point = getMouseCoordinates(e);
+						_this.userCanvasCtx.lineTo(_this.annotations._line.point.x, _this.annotations._line.point.y);
+						_this.userCanvasCtx.stroke();
+						
+						_this.userCanvasCtx.closePath();
+					}
 				}, false);
 
 				overlaidCanvas.addEventListener('mouseup', function (e) {
-
+					_this.annotations._drawingLines = false;
 				}, false);
 
 			}
@@ -93,9 +119,6 @@
 			};
 
 			function renderCustomText(ctx, txt, x, y) {
-				if(!txt)
-					return;
-				
 				ctx.font = getFontString(_this.annotations.text);
 				ctx.textBaseline = "top";
 
@@ -114,7 +137,7 @@
 				ctx.fillStyle = _this.annotations.text.fontColor;
 				ctx.fillText(txt, x - width / 2, y - height / 2 + margin / 2);
 			}
-
+			
 			function getFontString(object) {
 				var fontString = "";
 				fontString += ((object["fontStyle"] ? object["fontStyle"] : "normal") + " " + (object["fontSize"] ? object["fontSize"] : "12") + "px " + (object["fontFamily"] ? object["fontFamily"] : "Arial"));
