@@ -3,9 +3,10 @@
 
 	if (CanvasJS) {
 		CanvasJS.Chart.prototype._updateUserCustomOptions = function () {
-			this.annotations.tools = this.options && this.options.annotations && this.options.annotations.tools ? this.options.annotations.tools : { text: true, pencil: true };
+			this.annotations.tools = this.options && this.options.annotations && this.options.annotations.tools ? this.options.annotations.tools : { text: true, pencil: true, eraser: true };
 			this.annotations.text = this.options && this.options.annotations && this.options.annotations.text ? this.options.annotations.text : {};
 			this.annotations.pencil = this.options && this.options.annotations && this.options.annotations.pencil ? this.options.annotations.pencil : {};
+			this.annotations.eraser = this.options && this.options.annotations && this.options.annotations.eraser ? this.options.annotations.eraser : {};
 			this.annotations.tools.reset = true;
 
 			this.annotations.text.fontSize = this.annotations.text.fontSize ? this.annotations.text.fontSize : 12;
@@ -20,6 +21,7 @@
 			
 			this.annotations.pencil.color = this.annotations.pencil.color ? this.annotations.pencil.color : "#000";
 			this.annotations.pencil.lineThickness = this.annotations.pencil.lineThickness ? this.annotations.pencil.lineThickness : 1;
+			this.annotations.eraser.lineThickness = this.annotations.eraser.lineThickness ? this.annotations.eraser.lineThickness : 10;
 		}
 
 		CanvasJS.Chart.prototype.addAnnotations = function () {
@@ -28,7 +30,8 @@
 				this.annotations = {
 					tools: {},
 					text: {},
-					pencil: {}
+					pencil: {},
+					eraser: {}
 				};
 
 				this._updateUserCustomOptions();
@@ -68,6 +71,12 @@
 									_this.annotations._line.point = xy;
 								}
 								break;
+							case "eraser":
+								if(tool.button.value === "on") {
+									_this.annotations._erase = true;
+									_this.annotations._line.point = xy;
+								}
+								break;
 						}
 
 					}
@@ -75,6 +84,23 @@
 				}, false);
 
 				overlaidCanvas.addEventListener('mousemove', function (e) {
+					for (var j = 0; j < _this.drawingTools.length; j++) {
+						tool = _this.drawingTools[j];
+						switch (tool.name) {
+							case "text":
+								if (tool.button.value === "on") {
+									this.style.cursor = "text";
+								}
+								break;
+							case "pencil":
+							case "eraser":
+								if (tool.button.value === "on") {
+									this.style.cursor = "crosshair";
+								}
+								break;
+						}
+
+					}
 					
 					if(_this.annotations._drawingLines) {
 						_this.userCanvasCtx.beginPath(); 
@@ -90,10 +116,26 @@
 						
 						_this.userCanvasCtx.closePath();
 					}
+					
+					if(_this.annotations._erase) {
+						_this.userCanvasCtx.beginPath(); 
+						
+						_this.userCanvasCtx.lineWidth = _this.annotations.eraser.lineThickness;
+						_this.userCanvasCtx.globalCompositeOperation = "destination-out";
+						_this.userCanvasCtx.strokeStyle = "rgba(0,0,0,1)";
+						_this.userCanvasCtx.moveTo(_this.annotations._line.point.x, _this.annotations._line.point.y);
+						_this.annotations._line.point = getMouseCoordinates(e);
+						_this.userCanvasCtx.lineTo(_this.annotations._line.point.x, _this.annotations._line.point.y);
+						_this.userCanvasCtx.stroke();
+						
+						_this.userCanvasCtx.closePath();
+						_this.userCanvasCtx.globalCompositeOperation = "source-over";
+					}
 				}, false);
 
 				overlaidCanvas.addEventListener('mouseup', function (e) {
 					_this.annotations._drawingLines = false;
+					_this.annotations._erase = false;
 				}, false);
 
 			}
@@ -155,9 +197,10 @@
 		CanvasJS.Chart.prototype.createDrawingToolbar = function () {
 			var _this = this, drawingTool, tools = [], names = [];
 
-			var base64Images = {
+			this._base64Images = {
 				"text": " data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAsQAAALEBxi1JjQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAGgSURBVEiJ7dY/axRBGAbwn7rkhChRESstRBQrCxtTHIKFjb2VVa66D2OngpWdKfQj2NmlEcUgGNEUgnCGQ0MS7y7ExGLeJcuys3qHjeADy75/Zp5nZgeeWfiAg8ozwQ3TYzHmVrnWjkTwFC9j4C6e4ceUAvO4i7nIb+KeEOjPsOLfoY+DoqFxDedmJB3gbbVQSJ9kEvkpvMKxGQV+4iy+B+ekkL5VqXo8yPt4MSX5bTwODtI5viuw0jB4gC/o4WTUtvEk4h5ORLwV9UGNYwcrTWdQootHtdrHeD+s1ddyJDmBSw7P5SL28Lk2/kLk67iKzp8IjILsfuT70lYbJ0dvHw8i3wuOrMAmruBM5N+wgfMZgQ1cxunIh8GRFSBteT1D2IRPbc2jUxDNhP8C/4bAHBYa6gsOvb9VYFG6LHJ4g9WIRxhHvIrXLfPmg9sESy0Dh1jGHclpi4iXo5fDEsaFtM2cFZQYSffGrch31SyhAR102ty0xFCy515DL+uiJUqBrmRa5eqeS0YG1+Wv0K+VuH7pd6urqP5qjP2935b3vwBJnGW4rxSStgAAAABJRU5ErkJggg==",
 				"pencil": " data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAtQAAALUBOdDOnwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAIUSURBVEiJpdW7alRRFMbx3x6SSSZ3wUJIXiGNhZWFooFcC8V38AkEXyGFYCFWBsTCUouoGWJu3hGbgBAlWkYRC4kmhWJkW8yeeHI4Y2YyG04x6+z9/9ZZ31p7xBi18+AYbuAzbmE4+76kjRVCGMJjDGMaJayFEEb2N7WR+SDe4B46UizgJj5gJMZ4NAEM4DUW0Zl7lxUZDinYSln6E3gQx3Euxvg2tydgruUSoR8vMI8yruIrRgv2nsSnVuB9eIaHKGfid/Ii6MB9XG8W3ounWEBXJj6DnawIOpPxrzDQDLwHa6jm4NMJPpN+18u1iJcYOLSLUMFKOtSdg//AdCZWxgaeo38/fgh8KT2VTHyqAXw+edR3gNMA3p2yXm4An8rEupLxT/LwQoF0oIpV9GTik/heAF9IHvUWJlsAf5Q/gIkEn8x9ZTV51FMEPyCQ6vggtWMRfCLnT72EDeF5gbuIyaixFBvHdgF8Se0WrfwPvi+AIfzGZVzDZjJ0G+O5mVhO2R8KzwpcwnpmzD9iL2dobzK+mp2JZgXmMJuBnUkimxhL8LXUAF3NwmOMQoxRCGFLbezPxhi/QAihA7M4lbzZwcUY4y8trFIIYdS/P5DVEMIJiDHupS84nbroQqvw+rqidvuVcBvvUubr+Kl2U5ZbKcuBEql1xS7+4Dy+qU3nAlZijLtHybq+At5jqw6NMW60A8yvv3JDcQuKPJ4gAAAAAElFTkSuQmCC",
+				"eraser": "  data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAsQAAALEBxi1JjQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAFZSURBVEiJrdW9ShxRAIbhxwQ3rOQCLO0CuYaAnZDKRiv/CAtiEbAwlZ02YgqttFEREQsbQ5LODRZJIdpEMaWFjd5A2sW1mDMwKzPj/OzXnW8O7zvnzJkZqmUGv3GHHxivyEnNKrr4i33chvHXfsJ38Cp0DWyFfqMOfCVA9hLwZNbC9c0q8LQ7f4/JZ/M2VFhJGhy+hH45Q7JeBw6vcZgh2Q79WFX4S5I3uMdBHXia5GOi/4mLuvCkZB7DYfwWDzjuB/x5mmijgw9p8K7oU1AX3sOI4bv4FSZM9wve0rstzYRkqi4cbnCud8/LSHLh8F/6l7CIpInTPDhc4k8OIEtSCA6LomewWEJSGE70kpzgEQsFJK0y8DiD+BYkn3MkbdFqO5gtCi8qSZ6W0vA4DXwPkiUMhH7IC0cxKwMpXQNHmMAVrjGKEdEP/qwE/1+aIBbP4RPeBWmVXD8Bt4B5hDdpPgkAAAAASUVORK5CYII=",
 				"reset": " data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAsQAAALEBxi1JjQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAE2SURBVEiJ7dQ5SgRhEMXx34gooqhnENwQg0kNxA0x0Qt4EgU9hZkmZqJewcA1MDEzMHcHccQlEBmDqcGmwe6eUTMfFN9H8+r9q2mq+dcvaArrOMcrHuK+gYnwnOAMrY0E9+EA1ZzaC3AVs0XDx/AYTddYwkhM2Bb3ZdykYOtFwvsT4VvoyvDupQD3KOUBDhPhLQW99TrNA0yH8RLdeZMUUXrCxTjX8PQbgLQu1N5g9C/C4S0AHU3270d9q5cfADqj9zn5MP0NruLsbwJQ77nMApzEudAEYD7OoyzTjK/t7W0gvNfXVk9lGUsxQRXb8hdNeHai57DINMOoJCBZC9eD3fBWMFgEAJMJyC1WUEZ7VBmruEuEjxcNr2sIx/J/10cYaDS8rhLmsKm25R94j/umBv7///pWnxMHYbU5DLKCAAAAAElFTkSuQmCC",
 				"menu": " data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAsQAAALEBxi1JjQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAH7SURBVEiJ7dU7aBVBFAbg714upBPyMqBoiEISBCFqYaugNoqFYGGnVkqUVKlETaeFnRaWvoKgQYggKIqdYKOC+EITSUwiRkgQOzE+ijkhy7q5K9fWH4bZx/+f/+zsOTNQw2lM4lfBmMdltFpCG67EuyLNJE6hVsOJMBjBdX9iBQ5iNXagghvYGsZfCzTrMRRmJkNQD8eC3IV1cd1fohnBRBVr8aqE/CLmzuDDy7/QdFZLSP+M/walqEm13FbCWxnznFSm0F6iacdcDXdwGG9i5NGCMxjH63j2HmfDbL5A04tDovxb8UBxRy6OMWzKBNgchvU099FSyYi6pA7M47PUJwu55zVssLR8WYxhYpG0iEoBsR4W8FwqlG40YwrTeWIbHqr/uePSsmRRxQA+5rhPsTOb9VXswyDeFmTaLP1Q6InMq7iGA7iHYczG+6Mx9+MiqfQulCzH/shuY9wPxP1gAbdJqszv6BPEoRKDbcHbFtnP4G4dfkckPtxIJ3djlbQsy2EWo9jeiEFzJkg9fEJLIwZTMfeU8HrxoRGDaTyTqqVpGc4W7MFt0pF5syTocUtHJuzCD6laOgqCv5N2gI6KdPoP4Rae4GdOsEbaDB/JNBCO4Lx06I9GwB7sxhfsxWPSdnFS2juKungOl6RdNY8+qZpm8E1q1HPZr/oND9aUWf6WVwEAAAAASUVORK5CYII="
 			};
@@ -166,7 +209,7 @@
 			this._drawingToolbar = createElement("div", "chart-drawing-toolbar", { "position": "absolute", "left": "2px", "top": "10px", "width": "40px", "backgroundColor": this.toolbar.itemBackgroundColor, "border": "1px solid " + this.toolbar.buttonBorderColor, "zIndex": 9999 });
 			this._canvasJSContainer.appendChild(this._drawingToolbar);
 			var menu = createElement("button", "menu", { "border": "none", "background-color": this.toolbar.itemBackgroundColor, borderWidth: this.toolbar.buttonBorderThickness, "cursor": "pointer", "outline": "none", "userSelect": "none", "MozUserSeelct": "none", "WebkitUserSelect": "none", "msUserSelect": "none" });
-			menu.innerHTML = "<img src='" + base64Images["menu"] + "' style='width: 60%; padding: 5px'/>";
+			menu.innerHTML = "<img src='" + this._base64Images["menu"] + "' style='width: 60%; padding: 5px'/>";
 
 
 			menu.title = "Click to Show / Hide Toolbar Options";
@@ -192,16 +235,17 @@
 				var button = createElement("button", "chart-drawing-toolbar-button", { "display": "block", "marginLeft": "3px", "border": "none", "textAlign": "center", "backgroundColor": this.toolbar.itemBackgroundColor, "padding": 0, "margin": "0px 0px 0px 3px", "userSelect": "none", "MozUserSeelct": "none", "WebkitUserSelect": "none", "msUserSelect": "none", "outline": "none" });
 				button.name = Object.keys(this.annotations.tools)[i];
 				button.value = "off";
-				tools.push({ button: button, name: Object.keys(base64Images)[i] });
+				tools.push({ button: button, name: Object.keys(_this._base64Images)[i] });
 
 
 				var img = createElement('img', "", { "position": "relative", "padding": "4px", "cursor": "pointer", "background-color": this.toolbar.itemBackgroundColor, "border-width": this.toolbar.buttonBorderThickness + "px", "border-color": this.toolbar.buttonBorderColor, "border-style": "solid", "userSelect": "none", "MozUserSeelct": "none", "WebkitUserSelect": "none", "msUserSelect": "none", "outline": "none" });
-				img.src = base64Images[Object.keys(this.annotations.tools)[i]];
+				img.src = _this._base64Images[Object.keys(this.annotations.tools)[i]];
 				img.title = Object.keys(this.annotations.tools)[i];
+				
 				button.addEventListener("mouseover", function () {
 					this.childNodes[0].style.backgroundColor = _this.toolbar.itemBackgroundColorOnHover;
-
 				}, false);
+				
 				button.addEventListener("mouseout", function () {
 					this.childNodes[0].style.backgroundColor = this.value === "on" ? _this.toolbar.itemBackgroundColorOnHover : _this.toolbar.itemBackgroundColor;
 				}, false);
