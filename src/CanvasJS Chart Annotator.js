@@ -3,12 +3,21 @@
 
 	if (CanvasJS) {
 		CanvasJS.Chart.prototype._updateUserCustomOptions = function () {
+			this.annotations.enabled = this.options && this.options.annotations && typeof(this.options.annotations.enabled) !== "undefined" ? this.options.annotations.enabled : false;
+			this.annotations.showToolbar = this.options && this.options.annotations && typeof(this.options.annotations.showToolbar) !== "undefined" ? this.options.annotations.showToolbar : true;
+			
 			this.annotations.tools = this.options && this.options.annotations && this.options.annotations.tools ? this.options.annotations.tools : { text: true, pencil: true, eraser: true };
 			this.annotations.text = this.options && this.options.annotations && this.options.annotations.text ? this.options.annotations.text : {};
 			this.annotations.pencil = this.options && this.options.annotations && this.options.annotations.pencil ? this.options.annotations.pencil : {};
 			this.annotations.eraser = this.options && this.options.annotations && this.options.annotations.eraser ? this.options.annotations.eraser : {};
 			this.annotations.tools.reset = true;
 
+			this.annotations.lines = this.options && this.options.annotations && this.options.annotations.lines ? this.options.annotations.lines : [];			
+			for(var i = 0; i < this.annotations.lines.length; i++) {
+				this.annotations.lines[i].thickness = this.annotations.lines[i].thickness ? this.annotations.lines[i].thickness : 1; 
+				this.annotations.lines[i].color = this.annotations.lines[i].color ? this.annotations.lines[i].color : "#000"; 
+			}
+			
 			this.annotations.text.fontSize = this.annotations.text.fontSize ? this.annotations.text.fontSize : 12;
 			this.annotations.text.fontFamily = this.annotations.text.fontFamily ? this.annotations.text.fontFamily : "Calibri";
 			this.annotations.text.fontWeight = this.annotations.text.fontWeight ? this.annotations.text.fontWeight : "normal";
@@ -21,69 +30,71 @@
 			
 			this.annotations.pencil.color = this.annotations.pencil.color ? this.annotations.pencil.color : "#000";
 			this.annotations.pencil.lineThickness = this.annotations.pencil.lineThickness ? this.annotations.pencil.lineThickness : 1;
-			this.annotations.eraser.lineThickness = this.annotations.eraser.lineThickness ? this.annotations.eraser.lineThickness : 10;
+			this.annotations.eraser.thickness = this.annotations.eraser.thickness ? this.annotations.eraser.thickness : 10;
 		}
 
 		CanvasJS.Chart.prototype.addAnnotations = function () {
-			if(this.options && this.options.annotations && this.options.annotations.enabled) {
 			
-				this.annotations = {
-					tools: {},
-					text: {},
-					pencil: {},
-					eraser: {}
-				};
+			this.annotations = {};
 
-				this._updateUserCustomOptions();
+			this._updateUserCustomOptions();
 
-				var overlaidCanvas = this.overlaidCanvas, _this = this;
-				this.userCanvas = document.createElement('canvas');
-				this.userCanvas.setAttribute("class", "canvasjs-chart-user-canvas");
+			if(!this.annotations.enabled)
+				return;
+			
+			var overlaidCanvas = this.overlaidCanvas, _this = this;
+			this.userCanvas = document.createElement('canvas');
+			this.userCanvas.setAttribute("class", "canvasjs-chart-user-canvas");
 
-				this.userCanvas.width = this.width;
-				this.userCanvas.height = this.height;
+			this.userCanvas.width = this.width;
+			this.userCanvas.height = this.height;
 
-				this.userCanvas.style.position = "absolute";
-				this.userCanvas.style.userSelect = "none";
-				this._canvasJSContainer.insertBefore(this.userCanvas, this.overlaidCanvas);
+			this.userCanvas.style.position = "absolute";
+			this.userCanvas.style.userSelect = "none";
+			this._canvasJSContainer.insertBefore(this.userCanvas, this.overlaidCanvas);
 
-				this.userCanvasCtx = this.userCanvas.getContext('2d');
+			this.userCanvasCtx = this.userCanvas.getContext('2d');
 
-				if (!this.drawingTools)
-					this.drawingTools = this.createDrawingToolbar();
-				
-				this.annotations._line = {};
-				overlaidCanvas.addEventListener('mousedown', function (e) {
-					var xy = getMouseCoordinates(e), tool;
+			if (!this.drawingTools && this.annotations.showToolbar)
+				this.drawingTools = this.createDrawingToolbar();
+			
+			for(var i = 0; i < this.annotations.lines.length; i++) {
+				drawLine(this.userCanvasCtx, this.annotations.lines[i]);
+			}
+			
+			this.annotations._line = {};
+			overlaidCanvas.addEventListener('mousedown', function (e) {
+				var xy = getMouseCoordinates(e), tool;
 
-					for (var j = 0; j < _this.drawingTools.length; j++) {
-						tool = _this.drawingTools[j];
-						switch (tool.name) {
-							case "text":
-								if (tool.button.value === "on") {
-									var value = prompt("Enter the Text");
-									renderCustomText(_this.userCanvasCtx, value, xy.x, xy.y);
-								}
-								break;
-							case "pencil":
-								if(tool.button.value === "on") {
-									_this.annotations._drawingLines = true;
-									_this.annotations._line.point = xy;
-								}
-								break;
-							case "eraser":
-								if(tool.button.value === "on") {
-									_this.annotations._erase = true;
-									_this.annotations._line.point = xy;
-								}
-								break;
-						}
-
+				for (var j = 0; j < _this.drawingTools.length; j++) {
+					tool = _this.drawingTools[j];
+					switch (tool.name) {
+						case "text":
+							if (tool.button.value === "on") {
+								var value = prompt("Enter the Text");
+								renderCustomText(_this.userCanvasCtx, value, xy.x, xy.y);
+							}
+							break;
+						case "pencil":
+							if(tool.button.value === "on") {
+								_this.annotations._drawingLines = true;
+								_this.annotations._line.point = xy;
+							}
+							break;
+						case "eraser":
+							if(tool.button.value === "on") {
+								_this.annotations._erase = true;
+								_this.annotations._line.point = xy;
+							}
+							break;
 					}
 
-				}, false);
+				}
 
-				overlaidCanvas.addEventListener('mousemove', function (e) {
+			}, false);
+
+			overlaidCanvas.addEventListener('mousemove', function (e) {
+				if(_this.drawingTools) {
 					for (var j = 0; j < _this.drawingTools.length; j++) {
 						tool = _this.drawingTools[j];
 						switch (tool.name) {
@@ -101,44 +112,44 @@
 						}
 
 					}
+				}
+				
+				if(_this.annotations._drawingLines) {
+					_this.userCanvasCtx.beginPath(); 
 					
-					if(_this.annotations._drawingLines) {
-						_this.userCanvasCtx.beginPath(); 
-						
-						_this.userCanvasCtx.lineWidth = _this.annotations.pencil.lineThickness;
-						_this.userCanvasCtx.lineCap = 'round';
-						_this.userCanvasCtx.strokeStyle = _this.annotations.pencil.color;
-						
-						_this.userCanvasCtx.moveTo(_this.annotations._line.point.x, _this.annotations._line.point.y);
-						_this.annotations._line.point = getMouseCoordinates(e);
-						_this.userCanvasCtx.lineTo(_this.annotations._line.point.x, _this.annotations._line.point.y);
-						_this.userCanvasCtx.stroke();
-						
-						_this.userCanvasCtx.closePath();
-					}
+					_this.userCanvasCtx.lineWidth = _this.annotations.pencil.lineThickness;
+					_this.userCanvasCtx.lineCap = 'round';
+					_this.userCanvasCtx.strokeStyle = _this.annotations.pencil.color;
 					
-					if(_this.annotations._erase) {
-						_this.userCanvasCtx.beginPath(); 
-						
-						_this.userCanvasCtx.lineWidth = _this.annotations.eraser.lineThickness;
-						_this.userCanvasCtx.globalCompositeOperation = "destination-out";
-						_this.userCanvasCtx.strokeStyle = "rgba(0,0,0,1)";
-						_this.userCanvasCtx.moveTo(_this.annotations._line.point.x, _this.annotations._line.point.y);
-						_this.annotations._line.point = getMouseCoordinates(e);
-						_this.userCanvasCtx.lineTo(_this.annotations._line.point.x, _this.annotations._line.point.y);
-						_this.userCanvasCtx.stroke();
-						
-						_this.userCanvasCtx.closePath();
-						_this.userCanvasCtx.globalCompositeOperation = "source-over";
-					}
-				}, false);
+					_this.userCanvasCtx.moveTo(_this.annotations._line.point.x, _this.annotations._line.point.y);
+					_this.annotations._line.point = getMouseCoordinates(e);
+					_this.userCanvasCtx.lineTo(_this.annotations._line.point.x, _this.annotations._line.point.y);
+					_this.userCanvasCtx.stroke();
+					
+					_this.userCanvasCtx.closePath();
+				}
+				
+				if(_this.annotations._erase) {
+					_this.userCanvasCtx.beginPath(); 
+					
+					_this.userCanvasCtx.lineWidth = _this.annotations.eraser.thickness;
+					_this.userCanvasCtx.globalCompositeOperation = "destination-out";
+					_this.userCanvasCtx.strokeStyle = "rgba(0,0,0,1)";
+					_this.userCanvasCtx.moveTo(_this.annotations._line.point.x, _this.annotations._line.point.y);
+					_this.annotations._line.point = getMouseCoordinates(e);
+					_this.userCanvasCtx.lineTo(_this.annotations._line.point.x, _this.annotations._line.point.y);
+					_this.userCanvasCtx.stroke();
+					
+					_this.userCanvasCtx.closePath();
+					_this.userCanvasCtx.globalCompositeOperation = "source-over";
+				}
+			}, false);
 
-				overlaidCanvas.addEventListener('mouseup', function (e) {
-					_this.annotations._drawingLines = false;
-					_this.annotations._erase = false;
-				}, false);
+			overlaidCanvas.addEventListener('mouseup', function (e) {
+				_this.annotations._drawingLines = false;
+				_this.annotations._erase = false;
+			}, false);
 
-			}
 			function getMouseCoordinates(ev) {
 				var x = 0;
 				var y = 0;
@@ -187,6 +198,17 @@
 				var fontString = "";
 				fontString += ((object["fontStyle"] ? object["fontStyle"] : "normal") + " " + (object["fontSize"] ? object["fontSize"] : "12") + "px " + (object["fontFamily"] ? object["fontFamily"] : "Arial"));
 				return fontString;
+			}
+			
+			function drawLine(ctx, line){
+				var lineOffset = line.thickness % 2 === 1 ? 0.5 : 0
+				ctx.lineWidth = line.thickness;
+				ctx.strokeStyle = line.color;
+				
+				ctx.beginPath();
+				ctx.moveTo(line.coordinates.x1, line.coordinates.y1 + lineOffset);
+				ctx.lineTo(line.coordinates.x2, line.coordinates.y2 + lineOffset);
+				ctx.stroke();
 			}
 		}
 
